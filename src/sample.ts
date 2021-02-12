@@ -1,8 +1,8 @@
 import {Project} from "ts-morph";
 
-import * as Famix from "./famix/src/model/famix";
+import * as Famix from "./lib/famix/src/model/famix";
 import * as fs from "fs";
-import { FamixRepository } from "./famix/src/famix_repository";
+import { FamixRepository } from "./lib/famix/src/famix_repository";
 
 
 const project = new Project();
