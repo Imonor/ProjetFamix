@@ -1,27 +1,23 @@
-import {Project} from "ts-morph";
+import { Project } from "ts-morph";
 
 import * as Famix from "./lib/famix/src/model/famix";
 import * as fs from "fs";
 import { FamixRepository } from "./lib/famix/src/famix_repository";
 
-
 const project = new Project();
 
-
-try 
-{
+try {
     const sourceFiles = project.addSourceFilesAtPaths("**/resources/*.ts");
     var fmxRep = new FamixRepository();
+    var fmxClasses = new Array<Famix.Class>();
 
-    sourceFiles.forEach( file => {
+    sourceFiles.forEach(file => {
         var fmxFileAnchor = new Famix.FileAnchor(fmxRep);
         fmxFileAnchor.setFileName(file.getBaseName());
         fmxFileAnchor.setStartLine(file.getStartLineNumber());
         fmxFileAnchor.setEndLine(file.getEndLineNumber());
 
-        console.log("File Name ", file.getBaseName());
-
-        if(file.getNamespaces().length > 0) {
+        if (file.getNamespaces().length > 0) {
             var namespace = file.getNamespaces()[0];
             var name = namespace.getName();
 
@@ -34,6 +30,7 @@ try
                 var clsName = cls.getName();
                 fmxClass.setName(clsName);
                 fmxRep.addElement(fmxClass);
+                fmxClasses.push(fmxClass);
 
                 cls.getMethods().forEach(method => {
                     var fmxMethod = new Famix.Method(fmxRep);
@@ -42,19 +39,30 @@ try
                     fmxClass.addMethods(fmxMethod);
                 });
             });
-             
-        }
-        
-    });
 
+            // Get Inheritances
+            namespace.getClasses().forEach(cls => {
+                
+                var baseClass = cls.getBaseClass();
+                if (baseClass !== undefined){
+                    var fmxInher = new Famix.Inheritance(fmxRep);
+                    var sub = fmxClasses.filter(fmxc => fmxc.getName() === cls.getName())[0];
+                    var fmxSuper = fmxClasses.filter(fmxc => fmxc.getName() === baseClass.getName())[0];
+                    fmxInher.setSubclass(sub);
+                    fmxInher.setSuperclass(fmxSuper);
+                }
+            });
+
+        }
+
+    });
 
     var mse = fmxRep.getMSE();
     fs.writeFile('sample.mse', mse, (err) => {
-        if(err) { throw err; }
+        if (err) { throw err; }
     });
 }
-catch(Error)
-{
+catch (Error) {
     console.log(Error.message);
 }
 
