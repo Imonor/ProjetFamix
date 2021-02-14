@@ -10,7 +10,7 @@
     (name 'Fish')
     (superInheritances ))
 (FAMIX.CustomSourceLanguage  (id: 1)
-    (name 'ABAP'))
+    (name 'TypeScript'))
 (FAMIX.FileAnchor  (id: 2)
     (fileName 'Animal.ts')
     (endLine 11)

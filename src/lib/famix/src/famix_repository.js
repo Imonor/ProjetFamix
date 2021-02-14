@@ -9,7 +9,7 @@ var FamixRepository = /** @class */ (function () {
         this.famixClasses = new Set();
         this.idCounter = 1;
         this.lang = new famix_2.CustomSourceLanguage(this);
-        this.lang.setName("ABAP");
+        this.lang.setName("TypeScript");
     }
     FamixRepository.getFamixRepo = function () {
         if (this.repo === undefined) {
