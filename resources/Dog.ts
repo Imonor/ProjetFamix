@@ -11,4 +11,11 @@ module MyNamespace {
             this.furColor = furColor;
         }
     }
+
+    export interface Youpi {
+        yay: number;
+        hehe: boolean;
+
+        wow(): void;
+    }
 }

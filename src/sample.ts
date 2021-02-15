@@ -29,6 +29,7 @@ try {
                 var fmxClass = new Famix.Class(fmxRep);
                 var clsName = cls.getName();
                 fmxClass.setName(clsName);
+                fmxClass.setIsInterface(false);
                 fmxRep.addElement(fmxClass);
                 fmxClasses.push(fmxClass);
 
@@ -38,7 +39,36 @@ try {
                     fmxMethod.setName(methodName);
                     fmxClass.addMethods(fmxMethod);
                 });
+
+                cls.getProperties().forEach(prop => {
+                    var fmxAttr = new Famix.Attribute(fmxRep);
+                    fmxAttr.setName(prop.getName());
+                    fmxClass.addAttributes(fmxAttr);
+                });
+
             });
+
+            namespace.getInterfaces().forEach(inter => {
+                var fmxInter = new Famix.Class(fmxRep);
+                var interName = inter.getName();
+                fmxInter.setName(interName);
+                fmxInter.setIsInterface(true);
+                fmxRep.addElement(fmxInter);
+                fmxClasses.push(fmxInter);
+
+                inter.getMethods().forEach(method => {
+                    var fmxMethod = new Famix.Method(fmxRep);
+                    var methodName = method.getName();
+                    fmxMethod.setName(methodName);
+                    fmxInter.addMethods(fmxMethod);
+                });
+
+                inter.getProperties().forEach(prop => {
+                    var fmxAttr = new Famix.Attribute(fmxRep);
+                    fmxAttr.setName(prop.getName());
+                    fmxInter.addAttributes(fmxAttr);
+                });
+            })
 
             // Get Inheritances
             namespace.getClasses().forEach(cls => {
