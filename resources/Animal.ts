@@ -1,4 +1,5 @@
 module MyNamespace {    
+    
     export class Animal {
         public name: string;
         public move(): void {}
