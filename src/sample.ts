@@ -10,7 +10,8 @@ try {
     const sourceFiles = project.addSourceFilesAtPaths("**/resources/*.ts");
     var fmxRep = new FamixRepository();
     var fmxClasses = new Array<Famix.Class>();
-    var namespaces = new Set<NamespaceDeclaration>();
+    var namespaces = new Array<NamespaceDeclaration>();
+    var fmxNamespaces = new Array<Famix.Namespace>();
 
     sourceFiles.forEach(file => {
         var fmxFileAnchor = new Famix.FileAnchor(fmxRep);
@@ -21,9 +22,16 @@ try {
         if (file.getNamespaces().length > 0) {
             var namespace = file.getNamespaces()[0];
             var name = namespace.getName();
-            let fmxNamespace = new Famix.Namespace(fmxRep);
-            fmxNamespace.setName(name);
-            namespaces.add(namespace);
+            var fmxNamespace: Famix.Namespace;
+            if(namespaces.filter(ns => ns.getName() === name).length === 0) {
+                fmxNamespace = new Famix.Namespace(fmxRep);
+                fmxNamespace.setName(name);
+                fmxNamespaces.push(fmxNamespace);
+            }
+            else {
+                fmxNamespace = fmxNamespaces.filter(ns => ns.getName() === name)[0];
+            }
+            namespaces.push(namespace);
 
             namespace.getClasses().forEach(cls => {
 
@@ -31,8 +39,10 @@ try {
                 var clsName = cls.getName();
                 fmxClass.setName(clsName);
                 fmxClass.setIsInterface(false);
+                fmxClass.setSourceAnchor(fmxFileAnchor);
                 fmxRep.addElement(fmxClass);
                 fmxClasses.push(fmxClass);
+                fmxNamespace.addTypes(fmxClass);
 
                 cls.getMethods().forEach(method => {
                     var fmxMethod = new Famix.Method(fmxRep);
@@ -54,8 +64,10 @@ try {
                 var interName = inter.getName();
                 fmxInter.setName(interName);
                 fmxInter.setIsInterface(true);
+                fmxInter.setSourceAnchor(fmxFileAnchor);
                 fmxRep.addElement(fmxInter);
                 fmxClasses.push(fmxInter);
+                fmxNamespace.addTypes(fmxInter);
 
                 inter.getMethods().forEach(method => {
                     var fmxMethod = new Famix.Method(fmxRep);
@@ -73,7 +85,6 @@ try {
         }
 
     });
-
     
     // Get Inheritances
     namespaces.forEach(ns => {
