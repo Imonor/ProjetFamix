@@ -11,7 +11,7 @@ export class FamixRepository {
 
   constructor() {
     this.lang = new CustomSourceLanguage(this);
-    this.lang.setName("ABAP");
+    this.lang.setName("TypeScript");
   }
 
   public static getFamixRepo(): FamixRepository {

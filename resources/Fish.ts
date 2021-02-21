@@ -1,10 +1,19 @@
 module MyNamespace {
-    export class Fish extends Animal {
+    export class Fish extends MyNamespace.Animal implements MyNamespace.Youpi {
         public nbScale: number;
 
         constructor(name: string, nbScale: number) {
             super(name);
             this.nbScale = nbScale;
+        }
+        
+        yay: number;
+        hehe: boolean;
+        wow(): void {
+            throw new Error("Method not implemented.");
+        }
+        laMethode(): string {
+            throw new Error("Method not implemented.");
         }
     }
 }

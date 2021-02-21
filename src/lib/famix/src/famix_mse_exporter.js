@@ -16,8 +16,7 @@ var FamixMseExporter = /** @class */ (function () {
         }
         if (prop instanceof Set) {
             var valueBuffer = "";
-            for (var _i = 0, prop_1 = prop; _i < prop_1.length; _i++) {
-                var value = prop_1[_i];
+            prop.forEach( value => {
                 if (valueBuffer.length > 0) {
                     valueBuffer = valueBuffer + " ";
                 }
@@ -30,7 +29,7 @@ var FamixMseExporter = /** @class */ (function () {
                 else {
                     valueBuffer = valueBuffer + ("" + value);
                 }
-            }
+            });
             this.buffer = this.buffer + ("\n    (" + name + " " + valueBuffer + ")");
         }
         else if (prop instanceof famix_base_element_1.FamixBaseElement) {

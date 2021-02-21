@@ -1,5 +1,5 @@
 module MyNamespace {
-    export class Dog extends Animal {
+    export class Dog extends MyNamespace.Animal {
         public furColor: string;
 
         public bark(): void {
@@ -10,5 +10,12 @@ module MyNamespace {
             super(name);
             this.furColor = furColor;
         }
+    }
+
+    export interface Youpi extends BaseInterface {
+        yay: number;
+        hehe: boolean;
+    
+        wow(): void;
     }
 }
