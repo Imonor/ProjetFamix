@@ -1,4 +1,4 @@
-import { NamespaceDeclaration, Project } from "ts-morph";
+import { NamespaceDeclaration, Project, Type } from "ts-morph";
 
 import * as Famix from "./lib/famix/src/model/famix";
 import * as fs from "fs";
@@ -9,9 +9,9 @@ const project = new Project();
 try {
     const sourceFiles = project.addSourceFilesAtPaths("**/resources/*.ts");
     var fmxRep = new FamixRepository();
-    var fmxClasses = new Array<Famix.Class>();
     var namespaces = new Array<NamespaceDeclaration>();
     var fmxNamespaces = new Array<Famix.Namespace>();
+    var fmxTypes = new Map<string, Famix.Type>();
 
     sourceFiles.forEach(file => {
         var fmxFileAnchor = new Famix.FileAnchor(fmxRep);
@@ -41,19 +41,44 @@ try {
                 fmxClass.setIsInterface(false);
                 fmxClass.setSourceAnchor(fmxFileAnchor);
                 fmxRep.addElement(fmxClass);
-                fmxClasses.push(fmxClass);
+                fmxTypes.set(clsName, fmxClass);
                 fmxNamespace.addTypes(fmxClass);
 
                 cls.getMethods().forEach(method => {
                     var fmxMethod = new Famix.Method(fmxRep);
                     var methodName = method.getName();
                     fmxMethod.setName(methodName);
+
+                    var methodTypeName = getUsableName(method.getReturnType().getText());
+                    var fmxType: Famix.Type;
+                    if(!fmxTypes.has(methodTypeName)) {
+                        fmxType = new Famix.Type(fmxRep);
+                        fmxType.setName(methodTypeName);
+                        fmxTypes.set(methodTypeName, fmxType);
+                    }
+                    else {
+                        fmxType = fmxTypes.get(methodTypeName);
+                    }
+                    fmxMethod.setDeclaredType(fmxType);
                     fmxClass.addMethods(fmxMethod);
                 });
 
                 cls.getProperties().forEach(prop => {
                     var fmxAttr = new Famix.Attribute(fmxRep);
                     fmxAttr.setName(prop.getName());
+
+                    var propTypeName = prop.getType().getText();
+                    var fmxType: Famix.Type;
+                    if(!fmxTypes.has(propTypeName)) {
+                        fmxType = new Famix.Type(fmxRep);
+                        fmxType.setName(propTypeName);
+                        fmxTypes.set(propTypeName, fmxType);
+                    }
+                    else {
+                        fmxType = fmxTypes.get(propTypeName);
+                    }
+                    fmxAttr.setDeclaredType(fmxType);
+
                     fmxClass.addAttributes(fmxAttr);
                 });
 
@@ -66,19 +91,33 @@ try {
                 fmxInter.setIsInterface(true);
                 fmxInter.setSourceAnchor(fmxFileAnchor);
                 fmxRep.addElement(fmxInter);
-                fmxClasses.push(fmxInter);
+                fmxTypes.set(interName, fmxInter);
                 fmxNamespace.addTypes(fmxInter);
 
                 inter.getMethods().forEach(method => {
                     var fmxMethod = new Famix.Method(fmxRep);
                     var methodName = method.getName();
                     fmxMethod.setName(methodName);
+
                     fmxInter.addMethods(fmxMethod);
                 });
 
                 inter.getProperties().forEach(prop => {
                     var fmxAttr = new Famix.Attribute(fmxRep);
                     fmxAttr.setName(prop.getName());
+
+                    var propTypeName = prop.getType().getText();
+                    var fmxType: Famix.Type;
+                    if(!fmxTypes.has(propTypeName)) {
+                        fmxType = new Famix.Type(fmxRep);
+                        fmxType.setName(propTypeName);
+                        fmxTypes.set(propTypeName, fmxType);
+                    }
+                    else {
+                        fmxType = fmxTypes.get(propTypeName);
+                    }
+                    fmxAttr.setDeclaredType(fmxType);
+
                     fmxInter.addAttributes(fmxAttr);
                 });
             })
@@ -92,8 +131,8 @@ try {
             var baseClass = cls.getBaseClass();
             if (baseClass !== undefined){
                 var fmxInher = new Famix.Inheritance(fmxRep);
-                var sub = fmxClasses.filter(fmxc => fmxc.getName() === cls.getName())[0];
-                var fmxSuper = fmxClasses.filter(fmxc => fmxc.getName() === baseClass.getName())[0];
+                var sub = fmxTypes.get(cls.getName());
+                var fmxSuper = fmxTypes.get(baseClass.getName());
                 fmxInher.setSubclass(sub);
                 fmxInher.setSuperclass(fmxSuper);
             }
@@ -102,8 +141,8 @@ try {
             interfaces.forEach(inter => {
                 var fmxImplements = new Famix.Inheritance(fmxRep);
                 var completeName = inter.getText();
-                var fmxSuperInter = fmxClasses.filter(fmxc => fmxc.getName() === completeName.substring(completeName.lastIndexOf('.') + 1))[0];
-                var subImplements = fmxClasses.filter(fmxc => fmxc.getName() === cls.getName())[0];
+                var fmxSuperInter = fmxTypes.get(completeName.substring(completeName.lastIndexOf('.') + 1));
+                var subImplements = fmxTypes.get(cls.getName());
                 fmxImplements.setSuperclass(fmxSuperInter);
                 fmxImplements.setSubclass(subImplements);
             });
@@ -114,17 +153,15 @@ try {
             var baseInter = inter.getBaseTypes()[0];
             if (baseInter !== undefined){
                 var fmxInher = new Famix.Inheritance(fmxRep);
-                var sub = fmxClasses.filter(fmxc => fmxc.getName() === inter.getName())[0];
+                var sub = fmxTypes.get(inter.getName());
                 var completeName = baseInter.getText();
-                var fmxSuper = fmxClasses.filter(fmxc => fmxc.getName() === completeName.substring(completeName.lastIndexOf('.') + 1))[0];
+                var fmxSuper = fmxTypes.get(completeName.substring(completeName.lastIndexOf('.') + 1));
                 fmxInher.setSubclass(sub);
                 fmxInher.setSuperclass(fmxSuper);
             }
         });
         //*/
     });
-
-
     var mse = fmxRep.getMSE();
     fs.writeFile('sample.mse', mse, (err) => {
         if (err) { throw err; }
@@ -134,3 +171,11 @@ catch (Error) {
     console.log(Error.message);
 }
 
+function getUsableName(name: string): string {
+    if(name.includes('<'))
+        name = name.substring(0, name.indexOf('<'));
+    if(name.includes('.'))
+        name = name.substring(name.lastIndexOf('.') + 1);
+    
+    return name;
+}
