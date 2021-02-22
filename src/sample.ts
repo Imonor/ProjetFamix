@@ -49,7 +49,7 @@ try {
                     var methodName = method.getName();
                     fmxMethod.setName(methodName);
 
-                    var methodTypeName = method.getReturnType().getText();
+                    var methodTypeName = getUsableName(method.getReturnType().getText());
                     var fmxType: Famix.Type;
                     if(!fmxTypes.has(methodTypeName)) {
                         fmxType = new Famix.Type(fmxRep);
@@ -162,8 +162,6 @@ try {
         });
         //*/
     });
-
-
     var mse = fmxRep.getMSE();
     fs.writeFile('sample.mse', mse, (err) => {
         if (err) { throw err; }
@@ -173,3 +171,11 @@ catch (Error) {
     console.log(Error.message);
 }
 
+function getUsableName(name: string): string {
+    if(name.includes('<'))
+        name = name.substring(0, name.indexOf('<'));
+    if(name.includes('.'))
+        name = name.substring(name.lastIndexOf('.') + 1);
+    
+    return name;
+}
