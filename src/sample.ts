@@ -1,4 +1,4 @@
-import { NamespaceDeclaration, Project, Type } from "ts-morph";
+import { NamespaceDeclaration, Project, SyntaxKind } from "ts-morph";
 
 import * as Famix from "./lib/famix/src/model/famix";
 import * as fs from "fs";
@@ -136,7 +136,26 @@ try {
 
                     fmxInter.addAttributes(fmxAttr);
                 });
-            })
+            });
+
+            namespace.getFunctions().forEach(fct => {
+                var fmxFunct = new Famix.Function(fmxRep);
+                fmxFunct.setName(fct.getName());
+                    
+                var fctTypeName = getUsableName(fct.getReturnType().getText());
+                var fmxType = getFamixType(fctTypeName);
+                fmxFunct.setDeclaredType(fmxType);
+                
+                fct.getParameters().forEach(param => {
+                    var fmxParam = new Famix.Parameter(fmxRep);
+                    var paramTypeName = getUsableName(param.getType().getText());
+                    fmxParam.setDeclaredType(getFamixType(paramTypeName));
+                    fmxParam.setName(param.getName());
+                    fmxFunct.addParameters(fmxParam);
+                });
+
+                fmxNamespace.addFunctions(fmxFunct);
+            });
         }
 
     });
