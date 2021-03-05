@@ -1,17 +1,17 @@
-import { NamespaceDeclaration, Project, SyntaxKind } from "ts-morph";
+import {FunctionDeclaration, NamespaceDeclaration, Project, PropertyDeclaration, SyntaxKind } from "ts-morph";
 
 import * as Famix from "./lib/famix/src/model/famix";
-import * as fs from "fs";
+import * as fs from "fs"
 import { FamixRepository } from "./lib/famix/src/famix_repository";
 
 const project = new Project();
+var fmxRep = new FamixRepository();
+var namespaces = new Array<NamespaceDeclaration>();
+var fmxNamespaces = new Array<Famix.Namespace>();
+var fmxTypes = new Map<string, Famix.Type>();
 
 try {
     const sourceFiles = project.addSourceFilesAtPaths("**/resources/*.ts");
-    var fmxRep = new FamixRepository();
-    var namespaces = new Array<NamespaceDeclaration>();
-    var fmxNamespaces = new Array<Famix.Namespace>();
-    var fmxTypes = new Map<string, Famix.Type>();
 
     sourceFiles.forEach(file => {
         var fmxFileAnchor = new Famix.FileAnchor(fmxRep);
@@ -34,126 +34,44 @@ try {
             namespaces.push(namespace);
 
             namespace.getClasses().forEach(cls => {
-
-                var fmxClass = new Famix.Class(fmxRep);
-                var clsName = cls.getName();
-                fmxClass.setName(clsName);
-                fmxClass.setIsInterface(false);
-                fmxClass.setSourceAnchor(fmxFileAnchor);
-                fmxRep.addElement(fmxClass);
-                fmxTypes.set(clsName, fmxClass);
+                var fmxClass = createFamixClass(cls, fmxFileAnchor);
                 fmxNamespace.addTypes(fmxClass);
 
                 cls.getMethods().forEach(method => {
-                    var fmxMethod = new Famix.Method(fmxRep);
-                    var methodName = method.getName();
-                    fmxMethod.setName(methodName);
-
-                    var methodTypeName = getUsableName(method.getReturnType().getText());
-                    var fmxType = getFamixType(methodTypeName);
-                    fmxMethod.setDeclaredType(fmxType);
-
-                    method.getParameters().forEach(param => {
-                        var fmxParam = new Famix.Parameter(fmxRep);
-                        var paramTypeName = getUsableName(param.getType().getText());
-                        fmxParam.setDeclaredType(getFamixType(paramTypeName));
-                        fmxParam.setName(param.getName());
-                        fmxMethod.addParameters(fmxParam);
-                    });
-
+                    var fmxMethod = createFamixMethod(method);
                     fmxClass.addMethods(fmxMethod);
                 });
 
                 cls.getProperties().forEach(prop => {
-                    var fmxAttr = new Famix.Attribute(fmxRep);
-                    fmxAttr.setName(prop.getName());
-
-                    var propTypeName = prop.getType().getText();
-                    var fmxType = getFamixType(propTypeName);
-                    fmxAttr.setDeclaredType(fmxType);
-
+                    var fmxAttr = createFamixAttribute(prop);
                     fmxClass.addAttributes(fmxAttr);
                 });
 
                 cls.getConstructors().forEach(cstr => {
-                    var fmxMethod = new Famix.Method(fmxRep);
-                    fmxMethod.setName("constructor");
-
-                    var methodTypeName = getUsableName(cstr.getReturnType().getText());
-                    var fmxType = getFamixType(methodTypeName);
-                    fmxMethod.setDeclaredType(fmxType);
-                    
-                    cstr.getParameters().forEach(param => {
-                        var fmxParam = new Famix.Parameter(fmxRep);
-                        var paramTypeName = getUsableName(param.getType().getText());
-                        fmxParam.setDeclaredType(getFamixType(paramTypeName));
-                        fmxParam.setName(param.getName());
-                        fmxMethod.addParameters(fmxParam);
-                    });
-
+                    var fmxMethod = createFamixMethod(cstr, false, true);
                     fmxClass.addMethods(fmxMethod);
                 });
 
             });
 
             namespace.getInterfaces().forEach(inter => {
-                var fmxInter = new Famix.Class(fmxRep);
-                var interName = inter.getName();
-                fmxInter.setName(interName);
-                fmxInter.setIsInterface(true);
-                fmxInter.setSourceAnchor(fmxFileAnchor);
-                fmxRep.addElement(fmxInter);
-                fmxTypes.set(interName, fmxInter);
+                var fmxInter = createFamixClass(inter, fmxFileAnchor, true);
                 fmxNamespace.addTypes(fmxInter);
 
                 inter.getMethods().forEach(method => {
-                    var fmxMethod = new Famix.Method(fmxRep);
-                    var methodName = method.getName();
-                    fmxMethod.setName(methodName);
-                    
-                    var methodTypeName = getUsableName(method.getReturnType().getText());
-                    var fmxType = getFamixType(methodTypeName);
-                    fmxMethod.setDeclaredType(fmxType);
-                    
-                    method.getParameters().forEach(param => {
-                        var fmxParam = new Famix.Parameter(fmxRep);
-                        var paramTypeName = getUsableName(param.getType().getText());
-                        fmxParam.setDeclaredType(getFamixType(paramTypeName));
-                        fmxParam.setName(param.getName());
-                        fmxMethod.addParameters(fmxParam);
-                    });
-
+                    var fmxMethod = createFamixMethod(method, true);
                     fmxInter.addMethods(fmxMethod);
                 });
 
                 inter.getProperties().forEach(prop => {
-                    var fmxAttr = new Famix.Attribute(fmxRep);
-                    fmxAttr.setName(prop.getName());
-
-                    var propTypeName = prop.getType().getText();
-                    var fmxType = getFamixType(propTypeName);
-                    fmxAttr.setDeclaredType(fmxType);
-
+                    var fmxAttr = createFamixAttribute(prop);
                     fmxInter.addAttributes(fmxAttr);
                 });
+
             });
 
             namespace.getFunctions().forEach(fct => {
-                var fmxFunct = new Famix.Function(fmxRep);
-                fmxFunct.setName(fct.getName());
-                    
-                var fctTypeName = getUsableName(fct.getReturnType().getText());
-                var fmxType = getFamixType(fctTypeName);
-                fmxFunct.setDeclaredType(fmxType);
-                
-                fct.getParameters().forEach(param => {
-                    var fmxParam = new Famix.Parameter(fmxRep);
-                    var paramTypeName = getUsableName(param.getType().getText());
-                    fmxParam.setDeclaredType(getFamixType(paramTypeName));
-                    fmxParam.setName(param.getName());
-                    fmxFunct.addParameters(fmxParam);
-                });
-
+                var fmxFunct = createFamixFunction(fct);
                 fmxNamespace.addFunctions(fmxFunct);
             });
         }
@@ -204,6 +122,97 @@ try {
 }
 catch (Error) {
     console.log(Error.message);
+}
+
+function createFamixClass(cls, fileAnchor: Famix.FileAnchor, isInterface=false): Famix.Class {
+    var fmxClass = new Famix.Class(fmxRep);
+    var clsName = cls.getName();
+    fmxClass.setName(clsName);
+    fmxClass.setIsInterface(isInterface);
+    fmxClass.setSourceAnchor(fileAnchor);
+    fmxRep.addElement(fmxClass);
+    fmxTypes.set(clsName, fmxClass);
+    return fmxClass;
+}
+
+function createFamixMethod(method, isSignature=false, isConstructor=false): Famix.Method {
+
+    var fmxMethod = new Famix.Method(fmxRep);
+    if(isConstructor) {
+        fmxMethod.setName("constructor");
+    }
+    else {
+        var methodName = method.getName();
+        fmxMethod.setName(methodName);
+    }
+
+    var methodTypeName = getUsableName(method.getReturnType().getText());
+    var fmxType = getFamixType(methodTypeName);
+    fmxMethod.setDeclaredType(fmxType);
+
+    method.getParameters().forEach(param => {
+        var fmxParam = new Famix.Parameter(fmxRep);
+        var paramTypeName = getUsableName(param.getType().getText());
+        fmxParam.setDeclaredType(getFamixType(paramTypeName));
+        fmxParam.setName(param.getName());
+        fmxMethod.addParameters(fmxParam);
+    });
+
+    if(!isSignature) {
+        let MethodeCyclo = 0;
+        method.getStatements().forEach(stmt => {
+            if([SyntaxKind.IfStatement, SyntaxKind.WhileStatement, SyntaxKind.ForStatement,
+                SyntaxKind.DoStatement].includes(stmt.getKind())){
+                MethodeCyclo++;
+            }
+        });
+
+        fmxMethod.setCyclomaticComplexity(MethodeCyclo);
+        fmxMethod.setNumberOfStatements(method.getStatements().length);
+    }
+
+    return fmxMethod;
+}
+
+function createFamixAttribute(prop): Famix.Attribute {
+    var fmxAttr = new Famix.Attribute(fmxRep);
+    fmxAttr.setName(prop.getName());
+
+    var propTypeName = prop.getType().getText();
+    var fmxType = getFamixType(propTypeName);
+    fmxAttr.setDeclaredType(fmxType);
+    return fmxAttr;
+
+}
+
+function createFamixFunction(fct: FunctionDeclaration): Famix.Function {
+    var fmxFunct = new Famix.Function(fmxRep);
+    fmxFunct.setName(fct.getName());
+        
+    var fctTypeName = getUsableName(fct.getReturnType().getText());
+    var fmxType = getFamixType(fctTypeName);
+    fmxFunct.setDeclaredType(fmxType);
+    
+    fct.getParameters().forEach(param => {
+        var fmxParam = new Famix.Parameter(fmxRep);
+        var paramTypeName = getUsableName(param.getType().getText());
+        fmxParam.setDeclaredType(getFamixType(paramTypeName));
+        fmxParam.setName(param.getName());
+        fmxFunct.addParameters(fmxParam);
+    });
+
+    let MethodeCyclo = 0;
+    fct.getStatements().forEach(stmt => {
+        if([SyntaxKind.IfStatement, SyntaxKind.WhileStatement, SyntaxKind.ForStatement,
+            SyntaxKind.DoStatement].includes(stmt.getKind())){
+            MethodeCyclo++;
+        }
+    });
+
+    fmxFunct.setCyclomaticComplexity(MethodeCyclo);
+    fmxFunct.setNumberOfStatements(fct.getStatements().length);
+
+    return fmxFunct;
 }
 
 function getUsableName(name: string): string {
