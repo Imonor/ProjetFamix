@@ -150,6 +150,8 @@ function createFamixMethod(method, isSignature=false, isConstructor=false): Fami
     var fmxType = getFamixType(methodTypeName);
     fmxMethod.setDeclaredType(fmxType);
 
+    fmxMethod.setNumberOfLinesOfCode(method.getEndLineNumber() - method.getStartLineNumber());
+
     method.getParameters().forEach(param => {
         var fmxParam = new Famix.Parameter(fmxRep);
         var paramTypeName = getUsableName(param.getType().getText());
@@ -192,6 +194,8 @@ function createFamixFunction(fct: FunctionDeclaration): Famix.Function {
     var fctTypeName = getUsableName(fct.getReturnType().getText());
     var fmxType = getFamixType(fctTypeName);
     fmxFunct.setDeclaredType(fmxType);
+
+    fmxFunct.setNumberOfLinesOfCode(fct.getEndLineNumber() - fct.getStartLineNumber());
     
     fct.getParameters().forEach(param => {
         var fmxParam = new Famix.Parameter(fmxRep);
