@@ -1,5 +1,6 @@
+import {Animal} from 'MyNamespace'
 module MyNamespace {
-    export class Dog extends MyNamespace.Animal {
+    export class Dog extends Animal {
         public furColor: string;
 
         public bark(): void {

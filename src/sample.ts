@@ -14,10 +14,19 @@ try {
     const sourceFiles = project.addSourceFilesAtPaths("**/resources/*.ts");
 
     sourceFiles.forEach(file => {
-        var fmxFileAnchor = new Famix.FileAnchor(fmxRep);
-        fmxFileAnchor.setFileName(file.getBaseName());
-        fmxFileAnchor.setStartLine(file.getStartLineNumber());
-        fmxFileAnchor.setEndLine(file.getEndLineNumber());
+
+        var fmxIndexFileAnchor = new Famix.IndexedFileAnchor(fmxRep);
+        //file.getFirst
+        fmxIndexFileAnchor.setFileName(file.getFilePath());
+        fmxIndexFileAnchor.setStartPos(file.getStartLineNumber());
+        fmxIndexFileAnchor.setEndPos(file.getEndLineNumber());
+
+        fmxRep.addElement(fmxIndexFileAnchor);
+
+        // var fmxFileAnchor = new Famix.FileAnchor(fmxRep);
+        // fmxFileAnchor.setFileName(file.getBaseName());
+        // fmxFileAnchor.setStartLine(file.getStartLineNumber());
+        // fmxFileAnchor.setEndLine(file.getEndLineNumber());
 
         if (file.getNamespaces().length > 0) {
             var namespace = file.getNamespaces()[0];
@@ -34,7 +43,7 @@ try {
             namespaces.push(namespace);
 
             namespace.getClasses().forEach(cls => {
-                var fmxClass = createFamixClass(cls, fmxFileAnchor);
+                var fmxClass = createFamixClass(cls, fmxIndexFileAnchor);
                 fmxNamespace.addTypes(fmxClass);
 
                 cls.getMethods().forEach(method => {
@@ -55,7 +64,7 @@ try {
             });
 
             namespace.getInterfaces().forEach(inter => {
-                var fmxInter = createFamixClass(inter, fmxFileAnchor, true);
+                var fmxInter = createFamixClass(inter, fmxIndexFileAnchor, true);
                 fmxNamespace.addTypes(fmxInter);
 
                 inter.getMethods().forEach(method => {
@@ -124,12 +133,13 @@ catch (Error) {
     console.log(Error.message);
 }
 
-function createFamixClass(cls, fileAnchor: Famix.FileAnchor, isInterface=false): Famix.Class {
+function createFamixClass(cls, fmxIndexFileAnchor: Famix.IndexedFileAnchor, isInterface=false): Famix.Class {
     var fmxClass = new Famix.Class(fmxRep);
     var clsName = cls.getName();
     fmxClass.setName(clsName);
     fmxClass.setIsInterface(isInterface);
-    fmxClass.setSourceAnchor(fileAnchor);
+    fmxClass.setSourceAnchor(fmxIndexFileAnchor);
+
     fmxRep.addElement(fmxClass);
     fmxTypes.set(clsName, fmxClass);
     return fmxClass;
