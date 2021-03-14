@@ -1,5 +1,8 @@
+///<reference path='Animal.ts'/>
+///<reference path='Dog.ts'/>
+
 module MyNamespace {
-    export class Fish extends MyNamespace.Animal implements MyNamespace.Youpi {
+    export class Fish extends Animal implements Youpi {
         public nbScale: number;
 
         constructor(name: string, nbScale: number) {

@@ -1,4 +1,6 @@
-import {Animal} from 'MyNamespace'
+///<reference path='Animal.ts'/>
+///<reference path='IBaseInterface.ts'/>
+
 module MyNamespace {
     export class Dog extends Animal {
         public furColor: string;
