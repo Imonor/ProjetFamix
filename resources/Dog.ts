@@ -1,5 +1,8 @@
+///<reference path='Animal.ts'/>
+///<reference path='IBaseInterface.ts'/>
+
 module MyNamespace {
-    export class Dog extends MyNamespace.Animal {
+    export class Dog extends Animal {
         public furColor: string;
 
         public bark(): void {
