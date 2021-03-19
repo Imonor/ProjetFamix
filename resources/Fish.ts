@@ -9,7 +9,6 @@ module MyNamespace {
             super(name);
             this.nbScale = nbScale;
         }
-        
         yay: number;
         hehe: boolean;
         wow(): void {
