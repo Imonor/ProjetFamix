@@ -6,12 +6,18 @@ import { FamixRepository } from "./lib/famix/src/famix_repository";
 
 const project = new Project();
 var fmxRep = new FamixRepository();
-var namespaces = new Array<NamespaceDeclaration>();
-var fmxNamespaces = new Array<Famix.Namespace>();
+var fmxNamespaces = new Map<string, Famix.Namespace>();
 var fmxTypes = new Map<string, Famix.Type>();
 
+var filePaths = ["**/new-resources/tslint/src/*.ts", "**/new-resources/tslint/src/configs/*.ts",
+                 "**/new-resources/tslint/src/files/*.ts", "**/new-resources/tslint/src/formatters/*.ts",
+                 "**/new-resources/tslint/src/language/*.ts", "**/new-resources/tslint/src/language/formatter/*.ts", "**/new-resources/tslint/src/language/rule/*.ts", "**/new-resources/tslint/src/language/walker/*.ts",
+                 "**/new-resources/tslint/src/rules/*.ts", "**/new-resources/tslint/src/rules/code-examples/*.ts", "**/new-resources/tslint/src/rules/completed-docs/*.ts",
+                 "**/new-resources/tslint/src/verify/*.ts"
+                ];
+
 try {
-    const sourceFiles = project.addSourceFilesAtPaths("**/resources/*.ts");
+    const sourceFiles = project.addSourceFilesAtPaths(filePaths);
 
     sourceFiles.forEach(file => {
 
@@ -27,70 +33,75 @@ try {
         fmxFileAnchor.setStartLine(file.getStartLineNumber());
         fmxFileAnchor.setEndLine(file.getEndLineNumber());
 
+        var namespaceName: string;
+        var fmxNamespace: Famix.Namespace;
+
         if (file.getNamespaces().length > 0) {
             var namespace = file.getNamespaces()[0];
-            var name = namespace.getName();
-            var fmxNamespace: Famix.Namespace;
-            if(namespaces.filter(ns => ns.getName() === name).length === 0) {
-                fmxNamespace = new Famix.Namespace(fmxRep);
-                fmxNamespace.setName(name);
-                fmxNamespaces.push(fmxNamespace);
-            }
-            else {
-                fmxNamespace = fmxNamespaces.filter(ns => ns.getName() === name)[0];
-            }
-            namespaces.push(namespace);
-
-            namespace.getClasses().forEach(cls => {
-                var fmxClass = createFamixClass(cls, file);
-                fmxClass.setSourceAnchor(fmxFileAnchor);
-                fmxNamespace.addTypes(fmxClass);
-
-                cls.getMethods().forEach(method => {
-                    var fmxMethod = createFamixMethod(method, file);
-                    fmxClass.addMethods(fmxMethod);
-                });
-
-                cls.getProperties().forEach(prop => {
-                    var fmxAttr = createFamixAttribute(prop, file);
-                    fmxClass.addAttributes(fmxAttr);
-                });
-
-                cls.getConstructors().forEach(cstr => {
-                    var fmxMethod = createFamixMethod(cstr, file, false, true);
-                    fmxClass.addMethods(fmxMethod);
-                });
-
-            });
-
-            namespace.getInterfaces().forEach(inter => {
-                var fmxInter = createFamixClass(inter, file, true);
-                fmxInter.setSourceAnchor(fmxFileAnchor);
-                fmxNamespace.addTypes(fmxInter);
-
-                inter.getMethods().forEach(method => {
-                    var fmxMethod = createFamixMethod(method, file, true);
-                    fmxInter.addMethods(fmxMethod);
-                });
-
-                inter.getProperties().forEach(prop => {
-                    var fmxAttr = createFamixAttribute(prop, file);
-                    fmxInter.addAttributes(fmxAttr);
-                });
-
-            });
-
-            namespace.getFunctions().forEach(fct => {
-                var fmxFunct = createFamixFunction(fct, file);
-                fmxNamespace.addFunctions(fmxFunct);
-            });
+            namespaceName = namespace.getName();
+        }
+        else {
+            namespaceName = "DefaultNamespace";
         }
 
+        if(!fmxNamespaces.has(namespaceName)) {
+            fmxNamespace = new Famix.Namespace(fmxRep);
+            fmxNamespace.setName(namespaceName);
+            fmxNamespaces[namespaceName] = fmxNamespace;
+        }
+        else {
+            fmxNamespace = fmxNamespaces[namespaceName];
+        }
+
+        file.getClasses().forEach(cls => {
+            var fmxClass = createFamixClass(cls, file);
+            fmxClass.setSourceAnchor(fmxFileAnchor);
+            fmxNamespace.addTypes(fmxClass);
+
+            cls.getMethods().forEach(method => {
+                var fmxMethod = createFamixMethod(method, file);
+                fmxClass.addMethods(fmxMethod);
+            });
+
+            cls.getProperties().forEach(prop => {
+                var fmxAttr = createFamixAttribute(prop, file);
+                fmxClass.addAttributes(fmxAttr);
+            });
+
+            cls.getConstructors().forEach(cstr => {
+                var fmxMethod = createFamixMethod(cstr, file, false, true);
+                fmxClass.addMethods(fmxMethod);
+            });
+
+        });
+
+        file.getInterfaces().forEach(inter => {
+            var fmxInter = createFamixClass(inter, file, true);
+            fmxInter.setSourceAnchor(fmxFileAnchor);
+            fmxNamespace.addTypes(fmxInter);
+
+            inter.getMethods().forEach(method => {
+                var fmxMethod = createFamixMethod(method, file, true);
+                fmxInter.addMethods(fmxMethod);
+            });
+
+            inter.getProperties().forEach(prop => {
+                var fmxAttr = createFamixAttribute(prop, file);
+                fmxInter.addAttributes(fmxAttr);
+            });
+
+        });
+
+        file.getFunctions().forEach(fct => {
+            var fmxFunct = createFamixFunction(fct, file);
+            fmxNamespace.addFunctions(fmxFunct);
+        });
+
     });
-    
+    //*
     // Get Inheritances
-    namespaces.forEach(ns => {
-        ns.getClasses().forEach(cls => {
+    sourceFiles.forEach(sf => {
+        sf.getClasses().forEach(cls => {
             var baseClass = cls.getBaseClass();
             if (baseClass !== undefined){
                 var fmxInher = new Famix.Inheritance(fmxRep);
@@ -112,9 +123,9 @@ try {
         });
         
         //*
-        ns.getInterfaces().forEach(inter => {
+        sf.getInterfaces().forEach(inter => {
             var baseInter = inter.getBaseTypes()[0];
-            if (baseInter !== undefined){
+            if (baseInter !== undefined && baseInter.getText() !== 'Object') {
                 var fmxInher = new Famix.Inheritance(fmxRep);
                 var sub = fmxTypes.get(inter.getName());
                 var completeName = baseInter.getText();
@@ -125,6 +136,7 @@ try {
         });
         //*/
     });
+    //*/
     var mse = fmxRep.getMSE();
     fs.writeFile('sample.mse', mse, (err) => {
         if (err) { throw err; }
