@@ -27,12 +27,7 @@ try {
         fmxIndexFileAnchor.setEndPos(file.getEnd());
 
         fmxRep.addElement(fmxIndexFileAnchor);
-
-        var fmxFileAnchor = new Famix.FileAnchor(fmxRep);
-        fmxFileAnchor.setFileName(file.getBaseName());
-        fmxFileAnchor.setStartLine(file.getStartLineNumber());
-        fmxFileAnchor.setEndLine(file.getEndLineNumber());
-
+        
         var namespaceName: string;
         var fmxNamespace: Famix.Namespace;
 
@@ -55,7 +50,6 @@ try {
 
         file.getClasses().forEach(cls => {
             var fmxClass = createFamixClass(cls, file);
-            fmxClass.setSourceAnchor(fmxFileAnchor);
             fmxNamespace.addTypes(fmxClass);
 
             cls.getMethods().forEach(method => {
@@ -77,7 +71,6 @@ try {
 
         file.getInterfaces().forEach(inter => {
             var fmxInter = createFamixClass(inter, file, true);
-            fmxInter.setSourceAnchor(fmxFileAnchor);
             fmxNamespace.addTypes(fmxInter);
 
             inter.getMethods().forEach(method => {
@@ -156,6 +149,9 @@ function createFamixClass(cls, file: SourceFile, isInterface=false): Famix.Class
     fmxIndexFileAnchor.setFileName(file.getFilePath());
     fmxIndexFileAnchor.setStartPos(cls.getStart());
     fmxIndexFileAnchor.setEndPos(cls.getEnd());
+    fmxIndexFileAnchor.setElement(fmxClass);
+
+    fmxClass.setSourceAnchor(fmxIndexFileAnchor);
 
     fmxRep.addElement(fmxClass);
     fmxTypes.set(clsName, fmxClass);
@@ -181,6 +177,9 @@ function createFamixMethod(method, file: SourceFile, isSignature=false, isConstr
     fmxIndexFileAnchor.setFileName(file.getFilePath());
     fmxIndexFileAnchor.setStartPos(method.getStart());
     fmxIndexFileAnchor.setEndPos(method.getEnd());
+    fmxIndexFileAnchor.setElement(fmxMethod);
+
+    fmxMethod.setSourceAnchor(fmxIndexFileAnchor);
 
     fmxMethod.setNumberOfLinesOfCode(method.getEndLineNumber() - method.getStartLineNumber());
 
@@ -220,6 +219,9 @@ function createFamixAttribute(prop, file: SourceFile): Famix.Attribute {
     fmxIndexFileAnchor.setFileName(file.getFilePath());
     fmxIndexFileAnchor.setStartPos(prop.getStart());
     fmxIndexFileAnchor.setEndPos(prop.getEnd());
+    fmxIndexFileAnchor.setElement(fmxAttr);
+
+    fmxAttr.setSourceAnchor(fmxIndexFileAnchor);
 
     return fmxAttr;
 
@@ -237,6 +239,9 @@ function createFamixFunction(fct: FunctionDeclaration, file: SourceFile): Famix.
     fmxIndexFileAnchor.setFileName(file.getFilePath());
     fmxIndexFileAnchor.setStartPos(fct.getStart());
     fmxIndexFileAnchor.setEndPos(fct.getEnd());
+    fmxIndexFileAnchor.setElement(fmxFunct);
+
+    fmxFunct.setSourceAnchor(fmxIndexFileAnchor);
 
     fmxFunct.setNumberOfLinesOfCode(fct.getEndLineNumber() - fct.getStartLineNumber());
     
