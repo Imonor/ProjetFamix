@@ -1,4 +1,4 @@
-import {FunctionDeclaration, NamespaceDeclaration, Project, PropertyDeclaration, SourceFile, SyntaxKind } from "ts-morph";
+import {ClassDeclaration, FunctionDeclaration, InterfaceDeclaration, Project, SourceFile, SyntaxKind } from "ts-morph";
 
 import * as Famix from "./lib/famix/src/model/famix";
 import * as fs from "fs"
@@ -8,18 +8,19 @@ const project = new Project();
 var fmxRep = new FamixRepository();
 var fmxNamespaces = new Map<string, Famix.Namespace>();
 var fmxTypes = new Map<string, Famix.Type>();
+var allClasses = [];
+var allInterfaces = [];
 
-var filePaths = ["**/new-resources/tslint/src/*.ts", "**/new-resources/tslint/src/configs/*.ts",
-                 "**/new-resources/tslint/src/files/*.ts", "**/new-resources/tslint/src/formatters/*.ts",
-                 "**/new-resources/tslint/src/language/*.ts", "**/new-resources/tslint/src/language/formatter/*.ts", "**/new-resources/tslint/src/language/rule/*.ts", "**/new-resources/tslint/src/language/walker/*.ts",
-                 "**/new-resources/tslint/src/rules/*.ts", "**/new-resources/tslint/src/rules/code-examples/*.ts", "**/new-resources/tslint/src/rules/completed-docs/*.ts",
-                 "**/new-resources/tslint/src/verify/*.ts"
+var filePaths = ["**/resources/**.ts",
                 ];
 
 try {
     const sourceFiles = project.addSourceFilesAtPaths(filePaths);
 
     sourceFiles.forEach(file => {
+
+        var classes: ClassDeclaration[];
+        var interfaces: InterfaceDeclaration[];
 
         var fmxIndexFileAnchor = new Famix.IndexedFileAnchor(fmxRep);
         fmxIndexFileAnchor.setFileName(file.getFilePath());
@@ -34,9 +35,13 @@ try {
         if (file.getNamespaces().length > 0) {
             var namespace = file.getNamespaces()[0];
             namespaceName = namespace.getName();
+            classes = namespace.getClasses();
+            interfaces = namespace.getInterfaces();
         }
         else {
             namespaceName = "DefaultNamespace";
+            classes = file.getClasses();
+            interfaces = file.getInterfaces();
         }
 
         if(!fmxNamespaces.has(namespaceName)) {
@@ -48,7 +53,10 @@ try {
             fmxNamespace = fmxNamespaces[namespaceName];
         }
 
-        file.getClasses().forEach(cls => {
+        allClasses.push(...classes);
+        allInterfaces.push(...interfaces);
+
+        classes.forEach(cls => {
             var fmxClass = createFamixClass(cls, file);
             fmxNamespace.addTypes(fmxClass);
 
@@ -69,7 +77,7 @@ try {
 
         });
 
-        file.getInterfaces().forEach(inter => {
+        interfaces.forEach(inter => {
             var fmxInter = createFamixClass(inter, file, true);
             fmxNamespace.addTypes(fmxInter);
 
@@ -93,16 +101,15 @@ try {
     });
     //*
     // Get Inheritances
-    sourceFiles.forEach(sf => {
-        sf.getClasses().forEach(cls => {
-            var baseClass = cls.getBaseClass();
-            if (baseClass !== undefined){
-                var fmxInher = new Famix.Inheritance(fmxRep);
-                var sub = fmxTypes.get(cls.getName());
-                var fmxSuper = fmxTypes.get(baseClass.getName());
-                fmxInher.setSubclass(sub);
-                fmxInher.setSuperclass(fmxSuper);
-            }
+    allClasses.forEach(cls => {
+        var baseClass = cls.getBaseClass();
+        if (baseClass !== undefined){
+            var fmxInher = new Famix.Inheritance(fmxRep);
+            var sub = fmxTypes.get(cls.getName());
+            var fmxSuper = fmxTypes.get(baseClass.getName());
+            fmxInher.setSubclass(sub);
+            fmxInher.setSuperclass(fmxSuper);
+        }
 
             var interfaces  = cls.getImplements();
             interfaces.forEach(inter => {
@@ -116,18 +123,16 @@ try {
         });
         
         //*
-        sf.getInterfaces().forEach(inter => {
-            var baseInter = inter.getBaseTypes()[0];
-            if (baseInter !== undefined && baseInter.getText() !== 'Object') {
-                var fmxInher = new Famix.Inheritance(fmxRep);
-                var sub = fmxTypes.get(inter.getName());
-                var completeName = baseInter.getText();
-                var fmxSuper = fmxTypes.get(completeName.substring(completeName.lastIndexOf('.') + 1));
-                fmxInher.setSubclass(sub);
-                fmxInher.setSuperclass(fmxSuper);
-            }
-        });
-        //*/
+    allInterfaces.forEach(inter => {
+        var baseInter = inter.getBaseTypes()[0];
+        if (baseInter !== undefined && baseInter.getText() !== 'Object') {
+            var fmxInher = new Famix.Inheritance(fmxRep);
+            var sub = fmxTypes.get(inter.getName());
+            var completeName = baseInter.getText();
+            var fmxSuper = fmxTypes.get(completeName.substring(completeName.lastIndexOf('.') + 1));
+            fmxInher.setSubclass(sub);
+            fmxInher.setSuperclass(fmxSuper);
+        }
     });
     //*/
     var mse = fmxRep.getMSE();
